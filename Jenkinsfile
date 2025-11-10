@@ -15,12 +15,13 @@ pipeline {
         }
 
         stage('Build Angular App') {
-            steps {
-                sh '''
-                npm install @angular/cli
-                npm install
-                sh 'npx ng build --configuration production'
-                '''
+    steps {
+        sh '''
+            sh 'node -v && npm -v'
+            npm install @angular/cli
+            npm install
+            npx ng build --configuration production
+        '''
             }
         }
 
