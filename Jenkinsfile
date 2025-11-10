@@ -39,7 +39,7 @@ pipeline {
                 sh '''
                     echo "🐳 Building Docker image..."
                     cd angular-frontend
-                    docker build -t ${IMAGE_NAME}:latest .
+                    sudo docker build -t ${IMAGE_NAME}:latest .
                     echo "✅ Docker image built successfully."
                 '''
             }
