@@ -2,40 +2,25 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "pavanambuskar/angular-frontend"
-        CONTAINER_NAME = "angular-container"
-        APP_PORT = "80"
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub')   // your DockerHub credential ID
+        IMAGE_NAME = "pavanambuskar/angular-frontend"       // your image name on DockerHub
+        CONTAINER_NAME = "angular-frontend"                 // container name
     }
 
     stages {
-        stage('Build Docker Image') {
+        stage('Login to DockerHub') {
             steps {
                 sh '''
-                    echo "🐳 Building Docker image..."
-                    docker build -t $IMAGE_NAME:latest .
-                    echo "✅ Docker image built successfully."
+                    echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin
                 '''
             }
         }
 
-        stage('Login to DockerHub') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
-                    sh '''
-                        echo "🔐 Logging in to DockerHub..."
-                        echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USER" --password-stdin
-                        echo "✅ Logged in to DockerHub."
-                    '''
-                }
-            }
-        }
-
-        stage('Push Image to DockerHub') {
+        stage('Pull Docker Image') {
             steps {
                 sh '''
-                    echo "📤 Pushing image to DockerHub..."
-                    docker push $IMAGE_NAME:latest
-                    echo "✅ Image pushed successfully."
+                    echo "📦 Pulling image ${IMAGE_NAME}:latest ..."
+                    docker pull ${IMAGE_NAME}:latest
                 '''
             }
         }
@@ -43,10 +28,9 @@ pipeline {
         stage('Run Docker Container') {
             steps {
                 sh '''
-                    echo "🚀 Running container..."
-                    docker rm -f $CONTAINER_NAME || true
-                    docker run -d --name $CONTAINER_NAME -p $APP_PORT:80 $IMAGE_NAME:latest
-                    echo "✅ Container running at port $APP_PORT"
+                    echo "🚀 Running container ${CONTAINER_NAME} ..."
+                    docker ps -q --filter "name=${CONTAINER_NAME}" | grep -q . && docker rm -f ${CONTAINER_NAME} || true
+                    docker run -d -p 80:80 --name ${CONTAINER_NAME} ${IMAGE_NAME}:latest
                 '''
             }
         }
@@ -54,10 +38,10 @@ pipeline {
 
     post {
         success {
-            echo '✅ Pipeline completed successfully!'
+            echo "✅ Container is up and running! Visit your server's public IP to view the app."
         }
         failure {
-            echo '❌ Pipeline failed. Check logs for details.'
+            echo "❌ Pipeline failed. Check logs for details."
         }
     }
 }
