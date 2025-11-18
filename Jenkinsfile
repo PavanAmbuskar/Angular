@@ -2,9 +2,9 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub')   // your DockerHub credential ID
-        IMAGE_NAME = "pavanambuskar/angular-frontend"       // your image name on DockerHub
-        CONTAINER_NAME = "angular-frontend"                 // container name
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub')   
+        IMAGE_NAME = "pavanambuskar/angular-frontend"       
+        CONTAINER_NAME = "angular-frontend"                 
     }
 
     stages {
@@ -19,7 +19,6 @@ pipeline {
         stage('Pull Docker Image') {
             steps {
                 sh '''
-                    echo "📦 Pulling image ${IMAGE_NAME}:latest ..."
                     docker pull ${IMAGE_NAME}:latest
                 '''
             }
@@ -28,8 +27,8 @@ pipeline {
         stage('Run Docker Container') {
             steps {
                 sh '''
-                    echo "🚀 Running container ${CONTAINER_NAME} ..."
-                    docker ps -q --filter "name=${CONTAINER_NAME}" | grep -q . && docker rm -f ${CONTAINER_NAME} || true
+                    echo " Running container ${CONTAINER_NAME} ..."
+                    docker ps -aq --filter "name=${CONTAINER_NAME}" | grep -q . && docker rm -f ${CONTAINER_NAME} || true
                     docker run -d -p 80:80 --name ${CONTAINER_NAME} ${IMAGE_NAME}:latest
                 '''
             }
