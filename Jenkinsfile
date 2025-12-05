@@ -2,45 +2,55 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub')   
-        IMAGE_NAME = "pavanambuskar/angular-frontend"       
-        CONTAINER_NAME = "angular-frontend"                 
+        IMAGE = "pavanambuskar/angular-frontend"
+        TAG = "v${BUILD_NUMBER}"
     }
 
     stages {
-        stage('Login to DockerHub') {
+
+        stage('Checkout Code') {
             steps {
-                sh '''
-                    echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin
-                '''
+                git branch: 'main', url: 'https://github.com/PavanAmbuskar/ang-app.git'
             }
         }
 
-        stage('Pull Docker Image') {
+        stage('Install Dependencies') {
             steps {
-                sh '''
-                    docker pull ${IMAGE_NAME}:latest
-                '''
+                bat "npm install"
             }
         }
 
-        stage('Run Docker Container') {
+        stage('Build Angular') {
             steps {
-                sh '''
-                    echo " Running container ${CONTAINER_NAME} ..."
-                    docker ps -aq --filter "name=${CONTAINER_NAME}" | grep -q . && docker rm -f ${CONTAINER_NAME} || true
-                    docker run -d -p 80:80 --name ${CONTAINER_NAME} ${IMAGE_NAME}:latest
-                '''
+                bat "npm run build -- --configuration production"
             }
         }
-    }
 
-    post {
-        success {
-            echo "✅ Container is up and running! Visit your server's public IP to view the app."
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    dockerImage = docker.build("${IMAGE}:${TAG}")
+                }
+            }
         }
-        failure {
-            echo "❌ Pipeline failed. Check logs for details."
+
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    docker.withRegistry('', 'dockerhub') {
+                        dockerImage.push()
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                bat """
+                minikube kubectl -- set image deployment/angular-frontend-deployment \
+                angular-frontend=${IMAGE}:${TAG}
+                """
+            }
         }
     }
 }

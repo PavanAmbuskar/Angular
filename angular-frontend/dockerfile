@@ -1,29 +1,4 @@
-<<<<<<< HEAD
-# ---- STAGE 1: Build Angular App ----
-FROM node:18 AS build
-WORKDIR /app
 
-# Install dependencies
-COPY package*.json ./
-RUN npm install
-
-# Copy source code
-COPY . .
-
-# Build Angular (production build)
-RUN npm run build
-
-# ---- STAGE 2: Run Nginx Server ----
-FROM nginx:alpine
-
-# Copy built Angular app into Nginx HTML directory
-COPY --from=build /app/dist/angular-frontend /usr/share/nginx/html
-
-# Expose port 80
-EXPOSE 80
-
-# Start Nginx
-=======
 # Stage 1: Build Angular app
 FROM node:20-alpine AS build
 WORKDIR /app
@@ -36,5 +11,4 @@ RUN npm run build -- --configuration production
 FROM nginx:alpine
 COPY --from=build /app/dist/angular-frontend /usr/share/nginx/html
 EXPOSE 80
->>>>>>> 1b0a3c4b66119774aab2abb8655d0ab03b865a18
 CMD ["nginx", "-g", "daemon off;"]
