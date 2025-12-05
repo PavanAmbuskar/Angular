@@ -10,7 +10,7 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                git branch: 'main', url: 'https://github.com/PavanAmbuskar/ang-app.git'
+                git branch: 'main', url: 'https://github.com/PavanAmbuskar/Angular.git'
             }
         }
 
