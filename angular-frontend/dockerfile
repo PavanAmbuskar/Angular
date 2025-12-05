@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # ---- STAGE 1: Build Angular App ----
 FROM node:18 AS build
 WORKDIR /app
@@ -22,4 +23,18 @@ COPY --from=build /app/dist/angular-frontend /usr/share/nginx/html
 EXPOSE 80
 
 # Start Nginx
+=======
+# Stage 1: Build Angular app
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build -- --configuration production
+
+# Stage 2: Serve app with Nginx
+FROM nginx:alpine
+COPY --from=build /app/dist/angular-frontend /usr/share/nginx/html
+EXPOSE 80
+>>>>>>> 1b0a3c4b66119774aab2abb8655d0ab03b865a18
 CMD ["nginx", "-g", "daemon off;"]
