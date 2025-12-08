@@ -1,4 +1,5 @@
 pipeline {
+
     agent any
 
     options {
@@ -22,9 +23,16 @@ pipeline {
             }
         }
 
+        stage('Debug Workspace') {
+            steps {
+                bat "dir"
+                bat "cd angular-frontend && dir"
+            }
+        }
+
         stage('Install Dependencies') {
             steps {
-                dir('Angular') {
+                dir('angular-frontend') {
                     bat "npm install"
                 }
             }
@@ -32,7 +40,7 @@ pipeline {
 
         stage('Build Angular') {
             steps {
-                dir('Angular') {
+                dir('angular-frontend') {
                     bat "npm run build --configuration production"
                 }
             }
