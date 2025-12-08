@@ -1,6 +1,9 @@
 pipeline {
-
     agent any
+
+    options {
+        skipDefaultCheckout(true)
+    }
 
     tools {
         nodejs "node24"
@@ -15,8 +18,7 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                git url: 'https://github.com/PavanAmbuskar/Angular.git'
-
+                git branch: 'main', url: 'https://github.com/PavanAmbuskar/Angular.git'
             }
         }
 
@@ -52,8 +54,8 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 bat """
-                    minikube kubectl -- set image deployment/angular-frontend-deployment \
-                    angular-frontend=${IMAGE}:${TAG}
+                minikube kubectl -- set image deployment/angular-frontend-deployment \
+                angular-frontend=${IMAGE}:${TAG}
                 """
             }
         }
