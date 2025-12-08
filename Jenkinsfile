@@ -1,5 +1,10 @@
 pipeline {
+
     agent any
+
+    tools {
+        nodejs "node24"
+    }
 
     environment {
         IMAGE = "pavanambuskar/angular-frontend"
@@ -22,24 +27,23 @@ pipeline {
 
         stage('Build Angular') {
             steps {
-                bat "npm run build -- --configuration production"
+                bat "npm run build --configuration production"
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    dockerImage = docker.build("${IMAGE}:${TAG}")
-                }
+                bat "docker build -t ${IMAGE}:${TAG} ."
             }
         }
 
         stage('Push Docker Image') {
             steps {
-                script {
-                    docker.withRegistry('', 'dockerhub') {
-                        dockerImage.push()
-                    }
+                withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                    bat """
+                        docker login -u %USER% -p %PASS%
+                        docker push ${IMAGE}:${TAG}
+                    """
                 }
             }
         }
@@ -47,8 +51,8 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 bat """
-                minikube kubectl -- set image deployment/angular-frontend-deployment \
-                angular-frontend=${IMAGE}:${TAG}
+                    minikube kubectl -- set image deployment/angular-frontend-deployment \
+                    angular-frontend=${IMAGE}:${TAG}
                 """
             }
         }
