@@ -66,11 +66,11 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
             steps {
-                bat """
-                kubectl version --client
-                kubectl get pods
-                kubectl set image deployment/angular-frontend-deployment angular-frontend=${IMAGE}:${TAG}
-                """
+                withEnv(["KUBECONFIG=C:\\Users\\Dell\\.kube\\config"]) {
+                    bat "kubectl get nodes"
+                    bat "kubectl get pods"
+                    bat "kubectl set image deployment/angular-frontend-deployment angular-frontend=${IMAGE}:${TAG}"
+                }
             }
         }
     }
