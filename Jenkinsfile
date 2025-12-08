@@ -8,6 +8,7 @@ pipeline {
   }
 
   stages {
+
     stage('Checkout Code') {
       steps {
         git branch: 'main', url: 'https://github.com/PavanAmbuskar/Angular.git'
@@ -31,21 +32,23 @@ pipeline {
     }
 
     stage('Build Docker Image') {
-                steps {
-                    dir('angular-frontend') {
-                        bat "docker build -t ${IMAGE}:${TAG} ."
-                    }
-                }
-            }
+      steps {
+        dir('angular-frontend') {  // Dockerfile is here
+          bat "docker build -t ${IMAGE}:${TAG} ."
+        }
+      }
+    }
 
-    stage('Build Docker Image') {
-                steps {
-                    dir('angular-frontend') {
-                        bat "docker build -t ${IMAGE}:${TAG} ."
-                    }
-                }
-            }   
-             
+    stage('Push Docker Image') {
+      steps {
+        script {
+          docker.withRegistry('', 'dockerhub') {
+            docker.image("${IMAGE}:${TAG}").push()
+          }
+        }
+      }
+    }
+
     stage('Apply Kubernetes Manifests') {
       steps {
         bat "kubectl apply -f deployment.yml"
@@ -56,8 +59,11 @@ pipeline {
     stage('Deploy to Kubernetes') {
       steps {
         withEnv(["KUBECONFIG=${env.KUBECONFIG}"]) {
+
           bat "kubectl set image deployment/angular-frontend-deployment angular-frontend=${IMAGE}:${TAG} --record"
+          
           bat "kubectl rollout restart deployment/angular-frontend-deployment"
+          
           bat "kubectl rollout status deployment/angular-frontend-deployment"
         }
       }
