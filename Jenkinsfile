@@ -57,6 +57,12 @@ pipeline {
                 }
             }
         }
+        stage('Check User') {
+            steps {
+                bat "whoami"
+                bat "echo %USERPROFILE%"
+            }
+        }
 
         stage('Deploy to Kubernetes') {
             steps {
