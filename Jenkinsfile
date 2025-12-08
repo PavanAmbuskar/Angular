@@ -23,13 +23,6 @@ pipeline {
             }
         }
 
-        stage('Debug Workspace') {
-            steps {
-                bat "dir"
-                bat "cd angular-frontend && dir"
-            }
-        }
-
         stage('Install Dependencies') {
             steps {
                 dir('angular-frontend') {
@@ -42,14 +35,15 @@ pipeline {
             steps {
                 dir('angular-frontend') {
                     bat "npx ng build --configuration production"
-
                 }
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                bat "docker build -t ${IMAGE}:${TAG} ."
+                dir('angular-frontend') {
+                    bat "docker build -t ${IMAGE}:${TAG} ."
+                }
             }
         }
 
