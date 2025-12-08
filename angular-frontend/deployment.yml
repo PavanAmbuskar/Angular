@@ -11,10 +11,12 @@ spec:
     metadata:
       labels:
         app: angular-frontend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "80"
     spec:
       containers:
       - name: angular-frontend
         image: pavanambuskar/angular-frontend:v1
         ports:
         - containerPort: 80
-
