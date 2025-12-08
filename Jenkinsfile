@@ -40,14 +40,16 @@ pipeline {
     }
 
     stage('Push Docker Image') {
-      steps {
-        script {
-          docker.withRegistry('', 'dockerhub') {
-            docker.image("${IMAGE}:${TAG}").push()
-          }
+        steps {
+            withCredentials([usernamePassword(credentialsId: 'dockerhub',
+                        usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+            bat """
+                docker login -u %DOCKER_USER% -p %DOCKER_PASS%
+                docker push ${IMAGE}:${TAG}
+            """
+                }
+            }
         }
-      }
-    }
 
     stage('Apply Kubernetes Manifests') {
       steps {
