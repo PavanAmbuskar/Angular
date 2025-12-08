@@ -33,40 +33,45 @@ pipeline {
 
     stage('Build Docker Image') {
       steps {
-        dir('angular-frontend') {  // Dockerfile is here
+        dir('angular-frontend') {  // Dockerfile is inside this folder
           bat "docker build -t ${IMAGE}:${TAG} ."
         }
       }
     }
 
     stage('Push Docker Image') {
-        steps {
-            withCredentials([usernamePassword(credentialsId: 'dockerhub',
+      steps {
+        withCredentials([usernamePassword(credentialsId: 'dockerhub',
                         usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-            bat """
-                docker login -u %DOCKER_USER% -p %DOCKER_PASS%
-                docker push ${IMAGE}:${TAG}
-            """
-                }
-            }
+
+          bat """
+            docker login -u %DOCKER_USER% -p %DOCKER_PASS%
+            docker push ${IMAGE}:${TAG}
+          """
         }
+      }
+    }
 
     stage('Apply Kubernetes Manifests') {
-      steps dir('angular-frontend') {
-        bat "kubectl apply -f deployment.yml"
-        bat "kubectl apply -f service.yml"
+      steps {
+        dir('angular-frontend') {
+          bat "kubectl apply -f deployment.yml"
+          bat "kubectl apply -f service.yml"
+        }
       }
     }
 
     stage('Deploy to Kubernetes') {
-      steps dir('angular-frontend') {
+      steps {
         withEnv(["KUBECONFIG=${env.KUBECONFIG}"]) {
+          dir('angular-frontend') {
 
-          bat "kubectl set image deployment/angular-frontend-deployment angular-frontend=${IMAGE}:${TAG} --record"
-          
-          bat "kubectl rollout restart deployment/angular-frontend-deployment"
-          
-          bat "kubectl rollout status deployment/angular-frontend-deployment"
+            bat "kubectl set image deployment/angular-frontend-deployment angular-frontend=${IMAGE}:${TAG} --record"
+
+            bat "kubectl rollout restart deployment/angular-frontend-deployment"
+
+            bat "kubectl rollout status deployment/angular-frontend-deployment"
+          }
         }
       }
     }
