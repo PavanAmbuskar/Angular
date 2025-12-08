@@ -31,25 +31,21 @@ pipeline {
     }
 
     stage('Build Docker Image') {
-      steps {
-        dir('angular-frontend') {
-          script {
-            dockerImage = docker.build("${IMAGE}:${TAG}")
-          }
-        }
-      }
-    }
+                steps {
+                    dir('angular-frontend') {
+                        bat "docker build -t ${IMAGE}:${TAG} ."
+                    }
+                }
+            }
 
-    stage('Push Docker Image') {
-      steps {
-        script {
-          docker.withRegistry('', 'dockerhub') {
-            dockerImage.push()
-          }
-        }
-      }
-    }
-
+    stage('Build Docker Image') {
+                steps {
+                    dir('angular-frontend') {
+                        bat "docker build -t ${IMAGE}:${TAG} ."
+                    }
+                }
+            }   
+             
     stage('Apply Kubernetes Manifests') {
       steps {
         bat "kubectl apply -f deployment.yml"
