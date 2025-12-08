@@ -1,18 +1,10 @@
 pipeline {
-
     agent any
-
-    options {
-        skipDefaultCheckout(true)
-    }
-
-    tools {
-        nodejs "node24"
-    }
 
     environment {
         IMAGE = "pavanambuskar/angular-frontend"
-        TAG = "v${BUILD_NUMBER}"
+        TAG   = "v${BUILD_NUMBER}"
+        KUBECONFIG = "C:\\Users\\Dell\\.kube\\config"
     }
 
     stages {
@@ -25,70 +17,49 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                dir('angular-frontend') {
-                    bat "npm install"
-                }
+                bat "npm install"
             }
         }
 
         stage('Build Angular') {
             steps {
-                dir('angular-frontend') {
-                    bat "npx ng build --configuration production"
-                }
+                bat "npm run build -- --configuration production"
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                dir('angular-frontend') {
-                    bat "docker build -t ${IMAGE}:${TAG} ."
+                script {
+                    dockerImage = docker.build("${IMAGE}:${TAG}")
                 }
             }
         }
 
         stage('Push Docker Image') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                    bat """
-                        docker login -u %USER% -p %PASS%
-                        docker push ${IMAGE}:${TAG}
-                    """
+                script {
+                    docker.withRegistry('', 'dockerhub') {
+                        dockerImage.push()
+                    }
                 }
             }
         }
-        stage('Check User') {
+
+        stage('Apply Kubernetes Manifests') {
             steps {
-                bat "whoami"
-                bat "echo %USERPROFILE%"
+                bat "kubectl apply -f deployment.yml"
+                bat "kubectl apply -f service.yml"
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
                 withEnv(["KUBECONFIG=C:\\Users\\Dell\\.kube\\config"]) {
-                    bat "echo Using Kubeconfig: %KUBECONFIG%"
-                    bat "kubectl config view"
-                    bat "kubectl get nodes"
-                    bat "kubectl get pods"
-                    bat "kubectl set image deployment/angular-frontend-deployment angular-frontend=${IMAGE}:${TAG}"
+                    bat "kubectl set image deployment/angular-frontend-deployment angular-frontend=${IMAGE}:${TAG} --record"
+                    bat "kubectl rollout restart deployment/angular-frontend-deployment"
+                    bat "kubectl rollout status deployment/angular-frontend-deployment"
                 }
             }
         }
     }
 }
-
-// pipeline {
-//     agent any
-//     stages {
-//         stage('Test K8s') {
-//             steps {
-//                 withEnv(["KUBECONFIG=C:\\Users\\Dell\\.kube\\config"]) {
-//                     bat "kubectl config current-context"
-//                     bat "kubectl get nodes"
-//                     bat "kubectl get pods"
-//                 }
-//             }
-//         }
-//     }
-// }
