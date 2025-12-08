@@ -61,8 +61,9 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 bat """
-                minikube kubectl -- set image deployment/angular-frontend-deployment \
-                angular-frontend=${IMAGE}:${TAG}
+                kubectl version --client
+                kubectl get pods
+                kubectl set image deployment/angular-frontend-deployment angular-frontend=${IMAGE}:${TAG}
                 """
             }
         }
