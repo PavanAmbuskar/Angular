@@ -9,38 +9,37 @@ pipeline {
 
   stages {
 
+    /* ---------------------------------------------------
+       STAGE 0: Checkout Code
+    --------------------------------------------------- */
     stage('Checkout Code') {
       steps {
         git branch: 'main', url: 'https://github.com/PavanAmbuskar/Angular.git'
       }
     }
 
-    stage('Install Dependencies') {
+    /* ---------------------------------------------------
+       STAGE 1: Angular Install + Build
+    --------------------------------------------------- */
+    stage('Build Angular App') {
       steps {
         dir('angular-frontend') {
           bat "npm install"
-        }
-      }
-    }
-
-    stage('Build Angular') {
-      steps {
-        dir('angular-frontend') {
           bat "npm run build -- --configuration production"
         }
       }
     }
 
-    stage('Build Docker Image') {
+    /* ---------------------------------------------------
+       STAGE 2: Docker Build + Push
+    --------------------------------------------------- */
+    stage('Build & Push Docker Image') {
       steps {
-        dir('angular-frontend') {  // Dockerfile is inside this folder
+
+        dir('angular-frontend') {
           bat "docker build -t ${IMAGE}:${TAG} ."
         }
-      }
-    }
 
-    stage('Push Docker Image') {
-      steps {
         withCredentials([usernamePassword(credentialsId: 'dockerhub',
                         usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
 
@@ -52,19 +51,18 @@ pipeline {
       }
     }
 
-    stage('Apply Kubernetes Manifests') {
-      steps {
-        dir('angular-frontend') {
-          bat "kubectl apply -f deployment.yml"
-          bat "kubectl apply -f service.yml"
-        }
-      }
-    }
-
+    /* ---------------------------------------------------
+       STAGE 3: Kubernetes Deployment
+    --------------------------------------------------- */
     stage('Deploy to Kubernetes') {
       steps {
+
         withEnv(["KUBECONFIG=${env.KUBECONFIG}"]) {
+
           dir('angular-frontend') {
+
+            bat "kubectl apply -f deployment.yml"
+            bat "kubectl apply -f service.yml"
 
             bat "kubectl set image deployment/angular-frontend-deployment angular-frontend=${IMAGE}:${TAG} --record"
 
