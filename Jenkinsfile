@@ -52,14 +52,14 @@ pipeline {
         }
 
     stage('Apply Kubernetes Manifests') {
-      steps {
+      steps dir('angular-frontend') {
         bat "kubectl apply -f deployment.yml"
         bat "kubectl apply -f service.yml"
       }
     }
 
     stage('Deploy to Kubernetes') {
-      steps {
+      steps dir('angular-frontend') {
         withEnv(["KUBECONFIG=${env.KUBECONFIG}"]) {
 
           bat "kubectl set image deployment/angular-frontend-deployment angular-frontend=${IMAGE}:${TAG} --record"
