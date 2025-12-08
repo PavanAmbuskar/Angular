@@ -24,13 +24,17 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                bat "npm install"
+                dir('Angular') {
+                    bat "npm install"
+                }
             }
         }
 
         stage('Build Angular') {
             steps {
-                bat "npm run build --configuration production"
+                dir('Angular') {
+                    bat "npm run build --configuration production"
+                }
             }
         }
 
