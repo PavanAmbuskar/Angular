@@ -1,0 +1,82 @@
+name: Angular CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  IMAGE: pavanambuskar/angular-frontend
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # ---------------------------------------------------
+      # STAGE 0: Checkout Code
+      # ---------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ---------------------------------------------------
+      # STAGE 1: Setup Node & Build Angular
+      # ---------------------------------------------------
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        working-directory: angular-frontend
+        run: npm install
+
+      - name: Build Angular app
+        working-directory: angular-frontend
+        run: npm run build -- --configuration production
+
+      # ---------------------------------------------------
+      # STAGE 2: Docker Build & Push
+      # ---------------------------------------------------
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Build Docker image
+        run: |
+          docker build -t $IMAGE:v${{ github.run_number }} ./angular-frontend
+
+      - name: Push Docker image
+        run: |
+          docker push $IMAGE:v${{ github.run_number }}
+
+      # ---------------------------------------------------
+      # STAGE 3: Deploy to Kubernetes
+      # ---------------------------------------------------
+      - name: Setup kubectl
+        uses: azure/k8s-set-context@v3
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBECONFIG }}
+
+      - name: Apply Kubernetes manifests
+        working-directory: angular-frontend
+        run: |
+          kubectl apply -f deployment.yml
+          kubectl apply -f service.yml
+
+      - name: Update deployment image
+        run: |
+          kubectl set image deployment/angular-frontend-deployment \
+            angular-frontend=$IMAGE:v${{ github.run_number }} --record
+
+      - name: Restart Deployment
+        run: |
+          kubectl rollout restart deployment/angular-frontend-deployment
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/angular-frontend-deployment
